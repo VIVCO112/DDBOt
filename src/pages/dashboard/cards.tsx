@@ -20,6 +20,7 @@ import { useDevice } from '@deriv-com/ui';
 import { rudderStackSendOpenEvent } from '../../analytics/rudderstack-common-events';
 import { rudderStackSendDashboardClickEvent } from '../../analytics/rudderstack-dashboard';
 import DashboardBotList from './bot-list/dashboard-bot-list';
+import FreeBots from './bot-list/free-bots';
 
 type TCardProps = {
     has_dashboard_strategies: boolean;
@@ -186,6 +187,7 @@ const Cards = observer(({ is_mobile, has_dashboard_strategies }: TCardProps) => 
                     )}
                 </div>
                 <DashboardBotList />
+                <FreeBots />
             </div>
         ),
         // eslint-disable-next-line react-hooks/exhaustive-deps
