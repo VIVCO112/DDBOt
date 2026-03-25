@@ -27,9 +27,9 @@ const ApiTokenModal = ({ is_open, onClose }: TApiTokenModalProps) => {
             setLoading(true);
             setError('');
 
-            // Store the API token in session/local storage
-            sessionStorage.setItem('authToken', api_token);
+            // Store the API token in localStorage first
             localStorage.setItem('authToken', api_token);
+            sessionStorage.setItem('query_param_currency', 'USD');
 
             // Try to validate token using WebSocket API if available
             if ((window as any).DerivAPIBasic) {
@@ -42,30 +42,46 @@ const ApiTokenModal = ({ is_open, onClose }: TApiTokenModalProps) => {
                 });
 
                 if ((authResponse as any)?.error) {
+                    localStorage.removeItem('authToken');
                     throw new Error(
                         (authResponse as any).error?.message || 'Invalid API token. Please check and try again.'
                     );
                 }
 
-                // Store successful auth data
+                // Store successful auth data in the format the app expects
                 if ((authResponse as any)?.authorize) {
-                    localStorage.setItem('account_list', JSON.stringify([(authResponse as any).authorize]));
-                    localStorage.setItem('auth_data', JSON.stringify((authResponse as any).authorize));
+                    const authData = (authResponse as any).authorize;
+                    
+                    // Store active login ID
+                    localStorage.setItem('active_loginid', authData.loginid);
+                    
+                    // Store account list (expected format by the app)
+                    const accountsList = [
+                        {
+                            token: api_token,
+                            ...authData,
+                        },
+                    ];
+                    localStorage.setItem('accountsList', JSON.stringify(accountsList));
+                    localStorage.setItem('clientAccounts', JSON.stringify([authData]));
                 }
             } else {
                 // Fallback: just store the token and reload
                 console.warn('WebSocket API not available, storing token for next session');
             }
 
-            // Reload the page to initialize with the new token
+            // Set a short delay before reload to ensure storage is written
             setTimeout(() => {
                 window.location.href = '/';
-            }, 500);
+            }, 300);
         } catch (err) {
             const errorMsg = err instanceof Error ? err.message : 'Failed to authenticate with API token. Please check and try again.';
             setError(errorMsg);
-            // Clear stored token on error
-            sessionStorage.removeItem('authToken');
+            // Clear stored data on error
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('active_loginid');
+            localStorage.removeItem('accountsList');
+            localStorage.removeItem('clientAccounts');
         } finally {
             setLoading(false);
         }
