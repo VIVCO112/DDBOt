@@ -25,13 +25,38 @@ const ApiTokenModal = ({ is_open, onClose }: TApiTokenModalProps) => {
             setLoading(true);
             setError('');
 
-            // Store the API token in localStorage
+            // Validate API token by making a test API call
+            const response = await fetch('https://api.deriv.com/api/v3', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    authorize: api_token,
+                }),
+            });
+
+            if (!response.ok) {
+                throw new Error('Invalid API token. Please check and try again.');
+            }
+
+            const data = await response.json();
+
+            if (data.error) {
+                throw new Error(data.error.message || 'Failed to authorize with API token');
+            }
+
+            // Store the API token and authorization details in localStorage
             localStorage.setItem('api_token', api_token);
-            
-            // Redirect to Deriv account or dashboard
-            window.location.href = '/';
+            localStorage.setItem('auth_data', JSON.stringify(data.authorize));
+
+            // Show success message and reload after a short delay
+            setTimeout(() => {
+                window.location.href = '/';
+            }, 500);
         } catch (err) {
-            setError('Failed to login with API token. Please try again.');
+            const errorMsg = err instanceof Error ? err.message : 'Failed to login with API token. Please try again.';
+            setError(errorMsg);
         } finally {
             setLoading(false);
         }
@@ -53,7 +78,7 @@ const ApiTokenModal = ({ is_open, onClose }: TApiTokenModalProps) => {
         >
             <div className='api-token-modal__content'>
                 <Text as='p' size='xs' className='api-token-modal__description'>
-                    <Localize i18n_default_text='Enter your Deriv API token to login. You can create an API token from your Deriv account settings.' />
+                    <Localize i18n_default_text='Enter your Deriv API token to login and access your trading account. Your API token will be validated securely.' />
                 </Text>
 
                 <input
