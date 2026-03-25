@@ -3,6 +3,7 @@ import Dialog from '@/components/shared_ui/dialog';
 import Button from '@/components/shared_ui/button';
 import Text from '@/components/shared_ui/text';
 import { Localize } from '@deriv-com/translations';
+import { useStore } from '@/hooks/useStore';
 import './api-token-modal.scss';
 
 type TApiTokenModalProps = {
@@ -11,6 +12,7 @@ type TApiTokenModalProps = {
 };
 
 const ApiTokenModal = ({ is_open, onClose }: TApiTokenModalProps) => {
+    const { client } = useStore() ?? {};
     const [api_token, setApiToken] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
@@ -25,38 +27,45 @@ const ApiTokenModal = ({ is_open, onClose }: TApiTokenModalProps) => {
             setLoading(true);
             setError('');
 
-            // Validate API token by making a test API call
-            const response = await fetch('https://api.deriv.com/api/v3', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    authorize: api_token,
-                }),
-            });
+            // Store the API token in session/local storage
+            sessionStorage.setItem('authToken', api_token);
+            localStorage.setItem('authToken', api_token);
 
-            if (!response.ok) {
-                throw new Error('Invalid API token. Please check and try again.');
+            // Try to validate token using WebSocket API if available
+            if ((window as any).DerivAPIBasic) {
+                const api = new (window as any).DerivAPIBasic({
+                    connection: new WebSocket('wss://ws.binaryws.com/websockets/v3'),
+                });
+
+                const authResponse = await new Promise((resolve, reject) => {
+                    api.authorize(api_token).then(resolve).catch(reject);
+                });
+
+                if ((authResponse as any)?.error) {
+                    throw new Error(
+                        (authResponse as any).error?.message || 'Invalid API token. Please check and try again.'
+                    );
+                }
+
+                // Store successful auth data
+                if ((authResponse as any)?.authorize) {
+                    localStorage.setItem('account_list', JSON.stringify([(authResponse as any).authorize]));
+                    localStorage.setItem('auth_data', JSON.stringify((authResponse as any).authorize));
+                }
+            } else {
+                // Fallback: just store the token and reload
+                console.warn('WebSocket API not available, storing token for next session');
             }
 
-            const data = await response.json();
-
-            if (data.error) {
-                throw new Error(data.error.message || 'Failed to authorize with API token');
-            }
-
-            // Store the API token and authorization details in localStorage
-            localStorage.setItem('api_token', api_token);
-            localStorage.setItem('auth_data', JSON.stringify(data.authorize));
-
-            // Show success message and reload after a short delay
+            // Reload the page to initialize with the new token
             setTimeout(() => {
                 window.location.href = '/';
             }, 500);
         } catch (err) {
-            const errorMsg = err instanceof Error ? err.message : 'Failed to login with API token. Please try again.';
+            const errorMsg = err instanceof Error ? err.message : 'Failed to authenticate with API token. Please check and try again.';
             setError(errorMsg);
+            // Clear stored token on error
+            sessionStorage.removeItem('authToken');
         } finally {
             setLoading(false);
         }
