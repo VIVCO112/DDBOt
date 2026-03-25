@@ -53,15 +53,22 @@ const ApiTokenModal = ({ is_open, onClose }: TApiTokenModalProps) => {
                     // Store active login ID
                     localStorage.setItem('active_loginid', authData.loginid);
                     
-                    // Store account list as an object mapping loginid to account data
-                    // This format is expected by V2GetActiveClientId in appId.js
+                    // Store account list mapping loginid -> token
+                    // This format is expected by V2GetActiveClientId in appId.js which does:
+                    // Object.keys(account_list).find(key => account_list[key] === token)
                     const accountsList = {
+                        [authData.loginid]: api_token,
+                    };
+                    localStorage.setItem('accountsList', JSON.stringify(accountsList));
+                    
+                    // Store full account data separately for reference
+                    const fullAccountData = {
                         [authData.loginid]: {
                             token: api_token,
                             ...authData,
                         },
                     };
-                    localStorage.setItem('accountsList', JSON.stringify(accountsList));
+                    localStorage.setItem('client_account_details', JSON.stringify(fullAccountData));
                     
                     // Store balance data for immediate display
                     // The balance should be a number from the authorize response

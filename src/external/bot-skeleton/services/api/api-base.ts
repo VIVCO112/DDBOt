@@ -217,10 +217,23 @@ class APIBase {
         const subscribeToStream = (streamName: string) => {
             return doUntilDone(
                 () => {
+                    const balanceParams: Record<string, any> = {};
+                    
+                    // For balance subscription: use specific account for API tokens, 'all' for OAuth
+                    if (streamName === 'balance') {
+                        // API tokens can only subscribe to their specific account
+                        // OAuth tokens can subscribe to all accounts
+                        if (this.account_id) {
+                            balanceParams.account = this.account_id;
+                        } else {
+                            balanceParams.account = 'all';
+                        }
+                    }
+                    
                     const subscription = this.api?.send({
                         [streamName]: 1,
                         subscribe: 1,
-                        ...(streamName === 'balance' ? { account: 'all' } : {}),
+                        ...balanceParams,
                     });
                     if (subscription) {
                         this.current_auth_subscriptions.push(subscription);
