@@ -8,12 +8,14 @@ import { useIsIntercomAvailable } from '@/hooks/useIntercom';
 import useThemeSwitcher from '@/hooks/useThemeSwitcher';
 import useTMB from '@/hooks/useTMB';
 import RootStore from '@/stores/root-store';
+import { clearAuthData } from '@/utils/auth-utils';
 import {
     LegacyAccountLimitsIcon,
     LegacyCashierIcon,
     LegacyChartsIcon,
     LegacyHelpCentreIcon,
     LegacyHomeOldIcon,
+    LegacyLogout1pxIcon,
     LegacyProfileSmIcon,
     LegacyReportsIcon,
     LegacyResponsibleTradingIcon,
@@ -186,8 +188,19 @@ const useMobileMenuConfig = (client?: RootStore['client']) => {
                       }
                     : null,
             ].filter(Boolean) as TMenuConfig,
-            // Logout button removed from mobile interface as per acceptance criteria
-            [],
+            is_logged_in
+                ? [
+                      {
+                          as: 'button',
+                          label: localize('Logout'),
+                          LeftComponent: LegacyLogout1pxIcon,
+                          removeBorderBottom: true,
+                          onClick: () => {
+                              clearAuthData();
+                          },
+                      },
+                  ]
+                : [],
         ],
         [is_virtual, currency, is_logged_in, client_residence, is_tmb_enabled]
     );
