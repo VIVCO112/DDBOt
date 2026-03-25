@@ -64,17 +64,22 @@ const ApiTokenModal = ({ is_open, onClose }: TApiTokenModalProps) => {
                     localStorage.setItem('accountsList', JSON.stringify(accountsList));
                     
                     // Store balance data for immediate display
-                    if (authData.balance !== undefined) {
+                    // The balance should be a number from the authorize response
+                    const balance = typeof authData.balance === 'string' ? parseFloat(authData.balance) : authData.balance || 0;
+                    if (balance !== null && balance !== undefined) {
                         const balanceData = {
                             accounts: {
                                 [authData.loginid]: {
-                                    balance: authData.balance,
-                                    currency: authData.currency,
+                                    balance: balance,
+                                    currency: authData.currency || 'USD',
                                     loginid: authData.loginid,
                                 },
                             },
                         };
                         localStorage.setItem('all_accounts_balance', JSON.stringify(balanceData));
+                        console.log('Stored balance data:', balanceData);
+                    } else {
+                        console.warn('No balance data in authorize response');
                     }
                     
                     localStorage.setItem('clientAccounts', JSON.stringify([authData]));
