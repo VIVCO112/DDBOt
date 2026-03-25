@@ -73,6 +73,21 @@ const CoreStoreProvider: React.FC<{ children: React.ReactNode }> = observer(({ c
             client?.setLoginId(activeLoginid);
             client?.setAccountList(accountList);
             client?.setIsLoggedIn(true);
+            
+            // Load balance data from localStorage if available (for API token login flow)
+            if (!client?.all_accounts_balance) {
+                const storedBalance = localStorage.getItem('all_accounts_balance');
+                if (storedBalance) {
+                    try {
+                        const balanceData = JSON.parse(storedBalance);
+                        if (balanceData?.accounts) {
+                            client?.setAllAccountsBalance(balanceData);
+                        }
+                    } catch (e) {
+                        console.error('Failed to load balance from localStorage:', e);
+                    }
+                }
+            }
         }
     }, [accountList, activeAccount, activeLoginid, client]);
 

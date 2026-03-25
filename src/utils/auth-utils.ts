@@ -14,6 +14,7 @@ export const clearAuthData = (is_reload: boolean = true): void => {
     localStorage.removeItem('active_loginid');
     localStorage.removeItem('client.accounts');
     localStorage.removeItem('client.country');
+    localStorage.removeItem('all_accounts_balance');
     sessionStorage.removeItem('query_param_currency');
     if (is_reload) {
         location.reload();
@@ -33,6 +34,7 @@ export const handleOidcAuthFailure = (error: any): void => {
     localStorage.removeItem('active_loginid');
     localStorage.removeItem('clientAccounts');
     localStorage.removeItem('accountsList');
+    localStorage.removeItem('all_accounts_balance');
 
     // Set logged_state cookie to false
     Cookies.set('logged_state', 'false', {

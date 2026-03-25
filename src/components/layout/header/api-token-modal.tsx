@@ -3,7 +3,6 @@ import Dialog from '@/components/shared_ui/dialog';
 import Button from '@/components/shared_ui/button';
 import Text from '@/components/shared_ui/text';
 import { Localize } from '@deriv-com/translations';
-import { useStore } from '@/hooks/useStore';
 import './api-token-modal.scss';
 
 type TApiTokenModalProps = {
@@ -12,7 +11,6 @@ type TApiTokenModalProps = {
 };
 
 const ApiTokenModal = ({ is_open, onClose }: TApiTokenModalProps) => {
-    const { client } = useStore() ?? {};
     const [api_token, setApiToken] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
@@ -55,14 +53,30 @@ const ApiTokenModal = ({ is_open, onClose }: TApiTokenModalProps) => {
                     // Store active login ID
                     localStorage.setItem('active_loginid', authData.loginid);
                     
-                    // Store account list (expected format by the app)
-                    const accountsList = [
-                        {
+                    // Store account list as an object mapping loginid to account data
+                    // This format is expected by V2GetActiveClientId in appId.js
+                    const accountsList = {
+                        [authData.loginid]: {
                             token: api_token,
                             ...authData,
                         },
-                    ];
+                    };
                     localStorage.setItem('accountsList', JSON.stringify(accountsList));
+                    
+                    // Store balance data for immediate display
+                    if (authData.balance !== undefined) {
+                        const balanceData = {
+                            accounts: {
+                                [authData.loginid]: {
+                                    balance: authData.balance,
+                                    currency: authData.currency,
+                                    loginid: authData.loginid,
+                                },
+                            },
+                        };
+                        localStorage.setItem('all_accounts_balance', JSON.stringify(balanceData));
+                    }
+                    
                     localStorage.setItem('clientAccounts', JSON.stringify([authData]));
                 }
             } else {
